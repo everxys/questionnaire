@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { QUESTIONS } from '../types';
+import { content } from '../config/content';
+import { formatTemplate } from '../utils/template';
+import { computeAssessment } from '../mbti/scoring';
+import type { UserAssessment } from '../mbti/types';
 
 interface QuestionnairePageProps {
-  onComplete: () => void;
+  onComplete: (assessment: UserAssessment) => void;
   onBack: () => void;
 }
 
@@ -11,8 +14,9 @@ export default function QuestionnairePage({ onComplete, onBack }: QuestionnaireP
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
 
-  const currentQuestion = QUESTIONS[currentQuestionIndex];
-  const totalQuestions = QUESTIONS.length;
+  const questions = content.questionnaire.questions;
+  const currentQuestion = questions[currentQuestionIndex];
+  const totalQuestions = questions.length;
   const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
 
   const handleSelect = (value: number) => {
@@ -23,7 +27,7 @@ export default function QuestionnairePage({ onComplete, onBack }: QuestionnaireP
     if (currentQuestionIndex < totalQuestions - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      onComplete();
+      onComplete(computeAssessment(answers));
     }
   };
 
@@ -67,15 +71,20 @@ export default function QuestionnairePage({ onComplete, onBack }: QuestionnaireP
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         <h2 className="text-primary text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10 font-serif">
-          问卷调查
+          {content.questionnaire.headerTitle}
         </h2>
       </header>
 
       {/* Progress */}
       <div className="flex flex-col gap-3 px-6 py-4">
         <div className="flex justify-between items-end">
-          <span className="text-primary/60 text-xs font-medium uppercase tracking-wider">当前进度</span>
-          <p className="text-primary text-sm font-bold leading-none">Question {currentQuestionIndex + 1} / {totalQuestions}</p>
+          <span className="text-primary/60 text-xs font-medium uppercase tracking-wider">{content.questionnaire.progressLabel}</span>
+          <p className="text-primary text-sm font-bold leading-none">
+            {formatTemplate(content.questionnaire.progressTemplate, {
+              current: currentQuestionIndex + 1,
+              total: totalQuestions,
+            })}
+          </p>
         </div>
         <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
           <motion.div 
@@ -99,7 +108,7 @@ export default function QuestionnairePage({ onComplete, onBack }: QuestionnaireP
           >
             {currentQuestion.text}
           </motion.h1>
-          <p className="text-slate-400 text-xs text-center mt-4 tracking-widest uppercase">请根据您的真实感受进行评分</p>
+          <p className="text-slate-400 text-xs text-center mt-4 tracking-widest uppercase">{content.questionnaire.hint}</p>
         </div>
 
         {/* Likert Scale Buttons */}
@@ -117,7 +126,7 @@ export default function QuestionnairePage({ onComplete, onBack }: QuestionnaireP
                       ${btn.colorClass}
                       shadow-sm
                     `}
-                    aria-label={`Rate ${btn.value}`}
+                    aria-label={formatTemplate(content.questionnaire.rateAriaLabelTemplate, { value: btn.value })}
                   />
                 </div>
               );
@@ -126,8 +135,8 @@ export default function QuestionnairePage({ onComplete, onBack }: QuestionnaireP
 
           {/* Labels */}
           <div className="flex justify-between w-full max-w-[340px] px-2 mt-2">
-            <span className="text-[12px] text-slate-400 font-medium">非常不同意</span>
-            <span className="text-[12px] text-slate-400 font-medium">非常同意</span>
+            <span className="text-[12px] text-slate-400 font-medium">{content.questionnaire.scaleLeftLabel}</span>
+            <span className="text-[12px] text-slate-400 font-medium">{content.questionnaire.scaleRightLabel}</span>
           </div>
         </div>
       </main>
@@ -138,7 +147,7 @@ export default function QuestionnairePage({ onComplete, onBack }: QuestionnaireP
           onClick={handlePrev}
           className="flex-1 h-12 flex items-center justify-center rounded-full border border-primary text-primary text-sm font-bold transition-colors hover:bg-primary/5 cursor-pointer"
         >
-          上一题
+          {content.questionnaire.prevButtonText}
         </button>
         <button 
           onClick={handleNext}
@@ -148,7 +157,9 @@ export default function QuestionnairePage({ onComplete, onBack }: QuestionnaireP
             ${selectedValue !== undefined ? 'bg-accent shadow-accent/20 cursor-pointer' : 'bg-gray-300 cursor-not-allowed'}
           `}
         >
-          {currentQuestionIndex === totalQuestions - 1 ? '查看结果' : '下一题'}
+          {currentQuestionIndex === totalQuestions - 1
+            ? content.questionnaire.resultButtonText
+            : content.questionnaire.nextButtonText}
         </button>
       </footer>
       

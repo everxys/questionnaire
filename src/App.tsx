@@ -3,13 +3,24 @@ import LandingPage from './components/LandingPage';
 import QuestionnairePage from './components/QuestionnairePage';
 import ResultPage from './components/ResultPage';
 import { Page } from './types';
+import type { UserAssessment } from './mbti/types';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('landing');
+  const [assessment, setAssessment] = useState<UserAssessment | null>(null);
 
-  const handleStart = () => setCurrentPage('questionnaire');
-  const handleComplete = () => setCurrentPage('result');
-  const handleRestart = () => setCurrentPage('landing');
+  const handleStart = () => {
+    setAssessment(null);
+    setCurrentPage('questionnaire');
+  };
+  const handleComplete = (nextAssessment: UserAssessment) => {
+    setAssessment(nextAssessment);
+    setCurrentPage('result');
+  };
+  const handleRestart = () => {
+    setAssessment(null);
+    setCurrentPage('landing');
+  };
   const handleBackToLanding = () => setCurrentPage('landing');
 
   return (
@@ -24,7 +35,7 @@ export default function App() {
         />
       )}
       {currentPage === 'result' && (
-        <ResultPage onRestart={handleRestart} />
+        assessment && <ResultPage onRestart={handleRestart} assessment={assessment} />
       )}
     </div>
   );

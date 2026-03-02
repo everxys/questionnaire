@@ -1,11 +1,94 @@
-import React from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
+import { content } from '../config/content';
+import { formatTemplate } from '../utils/template';
+import { getOrCreateDeviceId } from '../utils/deviceId';
+import { verifyCaptchaCode } from '../services/captcha';
 
 interface LandingPageProps {
   onStart: () => void;
 }
 
 export default function LandingPage({ onStart }: LandingPageProps) {
+  const captcha = content.landing.captcha;
+  const subtitle = formatTemplate(content.landing.subtitleTemplate, {
+    count: content.questionnaire.questions.length,
+  });
+
+  const existingToken = useMemo(() => {
+    if (!captcha.enabled) return null;
+    try {
+      return localStorage.getItem(captcha.tokenStorageKey);
+    } catch {
+      return null;
+    }
+  }, [captcha.enabled, captcha.tokenStorageKey]);
+
+  const codeLength = Math.max(1, Math.min(10, Math.floor(captcha.codeLength || 5)));
+  const [code, setCode] = useState<string[]>(Array.from({ length: codeLength }, () => ''));
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const hasExistingToken = typeof existingToken === 'string' && existingToken.trim().length > 0;
+  const [verified, setVerified] = useState<boolean>(hasExistingToken);
+  const [justVerified, setJustVerified] = useState(false);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const handleStart = async () => {
+    if (!captcha.enabled) {
+      onStart();
+      return;
+    }
+
+    setError(null);
+    setJustVerified(false);
+
+    if (verified) {
+      onStart();
+      return;
+    }
+
+    const merged = code.join('').trim().toUpperCase();
+    if (merged.length !== codeLength) return;
+
+    setIsVerifying(true);
+    try {
+      const deviceId = getOrCreateDeviceId(captcha.deviceIdStorageKey);
+      const res = await verifyCaptchaCode({
+        verifyUrl: captcha.verifyUrl,
+        code: merged,
+        deviceId,
+        timeoutMs: captcha.timeoutMs,
+        retry409Once: captcha.retry409Once,
+      });
+
+      if (res.ok) {
+        try {
+          localStorage.setItem(captcha.tokenStorageKey, res.token);
+        } catch {
+          // ignore
+        }
+        setVerified(true);
+        setJustVerified(true);
+        onStart();
+        return;
+      }
+
+      if (res.status && res.status >= 500) {
+        setError(captcha.serverTip);
+        return;
+      }
+
+      if (res.status === 400) {
+        setError(captcha.invalidTip);
+        return;
+      }
+
+      setError(captcha.networkTip);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
@@ -25,7 +108,7 @@ export default function LandingPage({ onStart }: LandingPageProps) {
           <div className="text-primary flex items-center justify-center">
             <span className="material-symbols-outlined text-4xl">local_library</span>
           </div>
-          <h2 className="text-primary/70 text-sm font-medium tracking-[0.2em] uppercase">轻心理 · 历史人格</h2>
+          <h2 className="text-primary/70 text-sm font-medium tracking-[0.2em] uppercase">{content.landing.brand}</h2>
         </div>
       </header>
 
@@ -42,23 +125,108 @@ export default function LandingPage({ onStart }: LandingPageProps) {
 
         <div className="text-center space-y-4 relative z-10">
           <h1 className="text-primary text-[32px] font-bold leading-tight tracking-tight font-serif">
-            测测你是哪个历史人物
+            {content.landing.title}
           </h1>
           <p className="text-primary/60 text-base font-normal tracking-wide font-sans">
-            12道选择题 · 还原你的性格底色
+            {subtitle}
           </p>
         </div>
 
+        {/* Captcha Gate */}
+        {captcha.enabled && (
+          <div className="mt-12 w-full">
+            <div className="bg-white/70 backdrop-blur rounded-2xl border border-primary/10 p-6 shadow-sm">
+              <p className="text-primary/70 text-sm font-medium mb-3">{captcha.title}</p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="w-full min-w-0 flex-1">
+                  <div className="grid gap-2 sm:gap-3" style={{ gridTemplateColumns: `repeat(${codeLength}, minmax(0, 1fr))` }}>
+                    {code.map((value, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => {
+                          inputRefs.current[index] = el;
+                        }}
+                        value={value}
+                        inputMode="text"
+                        autoComplete="one-time-code"
+                        maxLength={1}
+                        onChange={(e) => {
+                          const raw = e.target.value.toUpperCase();
+                          const nextChar = (raw.match(/[A-Z0-9]/) ?? [''])[0];
+
+                          setCode((prev) => {
+                            const next = [...prev];
+                            next[index] = nextChar;
+                            return next;
+                          });
+
+                          if (nextChar && index < codeLength - 1) {
+                            inputRefs.current[index + 1]?.focus();
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Backspace' && !code[index] && index > 0) {
+                            inputRefs.current[index - 1]?.focus();
+                          }
+                        }}
+                        onPaste={(e) => {
+                          const pasted = e.clipboardData.getData('text').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                          if (!pasted) return;
+                          e.preventDefault();
+                          const chars = pasted.slice(0, codeLength).split('');
+                          setCode((prev) => {
+                            const next = [...prev];
+                            for (let i = 0; i < codeLength; i += 1) {
+                              next[i] = chars[i] ?? '';
+                            }
+                            return next;
+                          });
+                          const nextIndex = Math.min(chars.length, codeLength - 1);
+                          inputRefs.current[nextIndex]?.focus();
+                        }}
+                        aria-label={`${captcha.title} ${index + 1}`}
+                        className="h-12 w-full rounded-xl border border-primary/15 bg-white text-center text-primary font-bold tracking-widest placeholder:text-primary/30 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      />
+                    ))}
+                  </div>
+                  {captcha.placeholder && (
+                    <p className="text-xs text-primary/40 mt-2">例如：{captcha.placeholder}</p>
+                  )}
+                </div>
+                <button
+                  onClick={handleStart}
+                  disabled={isVerifying || (!verified && code.join('').trim().length !== codeLength)}
+                  className={`w-full sm:w-auto h-12 px-5 rounded-full text-white font-bold shadow-lg active:scale-95 transition-transform whitespace-nowrap text-sm ${
+                    isVerifying || (!verified && code.join('').trim().length !== codeLength)
+                      ? 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-accent hover:bg-accent/90 cursor-pointer'
+                  }`}
+                >
+                  {isVerifying ? captcha.verifyingText : captcha.verifyButtonText}
+                </button>
+              </div>
+              {justVerified && (
+                <p className="text-xs text-primary/60 mt-3">{captcha.verifiedTip}</p>
+              )}
+              {error && (
+                <p className="text-xs text-red-600 mt-3">{error}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Start Button */}
-        <div className="mt-16 w-full flex justify-center">
-          <button 
-            onClick={onStart}
-            className="bg-accent hover:bg-accent/90 text-white text-lg font-bold py-4 px-12 rounded-full shadow-lg transition-transform active:scale-95 flex items-center gap-2 cursor-pointer"
-          >
-            <span>开始探索</span>
-            <span className="material-symbols-outlined text-xl">arrow_forward</span>
-          </button>
-        </div>
+        {!captcha.enabled && (
+          <div className="mt-16 w-full flex justify-center">
+            <button
+              onClick={onStart}
+              className="bg-accent hover:bg-accent/90 text-white text-lg font-bold py-4 px-12 rounded-full shadow-lg transition-transform active:scale-95 flex items-center gap-2 cursor-pointer"
+            >
+              <span>{content.landing.startButtonText}</span>
+              <span className="material-symbols-outlined text-xl">arrow_forward</span>
+            </button>
+          </div>
+        )}
 
         {/* Decorative Ink Line */}
         <div className="mt-12 w-24 h-px bg-primary/10"></div>
@@ -67,7 +235,7 @@ export default function LandingPage({ onStart }: LandingPageProps) {
       {/* Footer Information */}
       <footer className="pb-12 px-4 text-center z-10">
         <p className="text-primary/40 text-xs tracking-widest font-light">
-          基于16型人格 × 历史人物数据库
+          {content.landing.footerNote}
         </p>
         <div className="mt-8 flex justify-center opacity-30">
           <div className="w-16 h-16 rounded-full border border-primary/20 flex items-center justify-center">

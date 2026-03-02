@@ -1,0 +1,48 @@
+{
+  "backAriaLabel": "Go back",
+  "headerTitle": "人格测试报告",
+  "matchTemplate": "匹配度 {percent}%",
+  "rawSimilarityTemplate": "原始相似度 {percent}%",
+  "matchSoftmaxTau": 10,
+  "emptyMessage": "暂无该MBTI的角色数据",
+  "detail": {
+    "title": "详细对比",
+    "analysisCardTitle": "性格对比分析",
+    "comparisonRowTemplate": "你 {user}% · TA {person}%（差 {diff}%）",
+    "otherSimilarTitle": "其他相似人格",
+    "otherSimilarCount": 2
+  },
+  "personality": {
+    "title": "个人性格深度解析",
+    "typeLabel": "你的性格类型",
+    "typeValueTemplate": "{mbti}",
+    "axes": [
+      {
+        "key": "E",
+        "label": "外向 (E) / 内向 (I)",
+        "highDesc": "你从与人交流和推动事情中获得能量。",
+        "lowDesc": "你更偏好独处思考，从安静的环境中恢复能量。"
+      },
+      {
+        "key": "N",
+        "label": "直觉 (N) / 实感 (S)",
+        "highDesc": "你看重未来的可能性，善于从宏观角度思考问题。",
+        "lowDesc": "你更关注当下事实与细节，偏好稳健与可验证的信息。"
+      },
+      {
+        "key": "T",
+        "label": "思维 (T) / 情感 (F)",
+        "highDesc": "你做决定时，逻辑和效率是第一位的。",
+        "lowDesc": "你更重视人际感受与价值一致性，倾向于用同理心做判断。"
+      },
+      {
+        "key": "J",
+        "label": "判断 (J) / 知觉 (P)",
+        "highDesc": "你喜欢有条不紊的生活和工作。",
+        "lowDesc": "你更偏好保持弹性，按情况调整计划并拥抱变化。"
+      }
+    ]
+  },
+  "restartButtonText": "重新测试",
+  "shareButtonText": "分享结果"
+}

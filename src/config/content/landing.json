@@ -1,0 +1,24 @@
+{
+  "brand": "轻心理 · 历史人格",
+  "title": "测测你是哪个历史人物",
+  "subtitleTemplate": "{count}道选择题 · 还原你的性格底色",
+  "startButtonText": "开始探索",
+  "footerNote": "基于16型人格 × 历史人物数据库",
+  "captcha": {
+    "enabled": true,
+    "verifyUrl": "/api/captcha/verify",
+    "codeLength": 6,
+    "timeoutMs": 5000,
+    "retry409Once": true,
+    "deviceIdStorageKey": "questionnaire.deviceId",
+    "tokenStorageKey": "questionnaire.captchaToken",
+    "title": "请输入验证码",
+    "placeholder": "例如：A7X9B2",
+    "verifyButtonText": "验证并开始",
+    "verifyingText": "验证中…",
+    "invalidTip": "验证码无效/已使用/已过期，请检查后重试。",
+    "serverTip": "服务繁忙，请稍后重试。",
+    "networkTip": "网络异常，请稍后重试。",
+    "verifiedTip": "验证通过"
+  }
+}
