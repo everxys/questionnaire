@@ -32,7 +32,7 @@ async function fetchJson(url: string, init: RequestInit, timeoutMs: number): Pro
 const app = express();
 app.use(express.json());
 
-app.post('/api/captcha/verify', async (req, res) => {
+async function proxyVerify(req: express.Request, res: express.Response): Promise<void> {
   const upstream = `${getUpstreamBaseUrl().replace(/\/$/, '')}/api/verify`;
   const timeoutMs = Number(process.env.CAPTCHA_TIMEOUT_MS || '5000');
 
@@ -51,9 +51,9 @@ app.post('/api/captcha/verify', async (req, res) => {
 
   if (!status) return;
   res.status(status).json(json as UpstreamVerifyResponse);
-});
+}
 
-app.post('/api/captcha/code', async (_req, res) => {
+async function proxyCode(_req: express.Request, res: express.Response): Promise<void> {
   const upstream = `${getUpstreamBaseUrl().replace(/\/$/, '')}/api/code`;
   const timeoutMs = Number(process.env.CAPTCHA_TIMEOUT_MS || '5000');
   const adminSecret = process.env.CAPTCHA_ADMIN_SECRET;
@@ -80,7 +80,13 @@ app.post('/api/captcha/code', async (_req, res) => {
 
   if (!status) return;
   res.status(status).json(json as UpstreamCodeResponse);
-});
+}
+
+// Support both `/api/captcha/*` and `/api/captchas/*` prefixes (some gateways use plural).
+app.post('/api/captcha/verify', proxyVerify);
+app.post('/api/captchas/verify', proxyVerify);
+app.post('/api/captcha/code', proxyCode);
+app.post('/api/captchas/code', proxyCode);
 
 const distDir = path.resolve(process.cwd(), 'dist');
 app.use(express.static(distDir));
@@ -92,4 +98,3 @@ const port = Number(process.env.PORT || '5173');
 app.listen(port, '0.0.0.0', () => {
   console.log(`[server] listening on http://0.0.0.0:${port}`);
 });
-

@@ -21,6 +21,11 @@ export default defineConfig(() => {
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/api\/captcha/, '/api'),
         },
+        '/api/captchas': {
+          target: 'https://captcha.everxys.top',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api\/captchas/, '/api'),
+        },
       },
     },
   };
