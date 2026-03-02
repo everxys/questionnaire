@@ -38,4 +38,4 @@
 
 ## 2026-03-02
 
-- 修复生产环境验证码校验 CORS/404：前端走同源代理（默认 `/api/captchas/verify`，兼容 `/api/captcha/verify`），由 `npm run start` 的 Express 转发到第三方 `/api/verify`：`src/config/content/landing.json`、`server/index.ts`
+- 修复生产环境验证码校验 404：Vercel 部署补齐同源 API（`/api/captchas/verify` + 兼容 `/api/captcha/verify`）转发到第三方 `/api/verify`：`api/captchas/verify.ts`、`api/captcha/verify.ts`
