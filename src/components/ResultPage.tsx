@@ -7,7 +7,6 @@ import { getPersonasForMbti } from '../personas';
 import { pickTopAndOthers, rankPersonas } from '../mbti/matching';
 import { getMbtiReport } from '../reports';
 import type { MbtiPersonaReportVariant, ReportItem, ReportOtherPersonaBlock } from '../reports/types';
-import { buildResultShareUrl } from '../utils/resultLink';
 
 interface ResultPageProps {
   onRestart: () => void;
@@ -62,7 +61,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-function createFallbackPosterPng(args: { mbti: string; personaName?: string; matchPercent?: number; shareUrl?: string }): string {
+function createFallbackPosterPng(args: { mbti: string; personaName?: string; matchPercent?: number }): string {
   const w = 1080;
   const h = 1440;
   const canvas = document.createElement('canvas');
@@ -103,7 +102,7 @@ function createFallbackPosterPng(args: { mbti: string; personaName?: string; mat
   ctx.fillStyle = 'rgba(20, 20, 20, 0.35)';
   ctx.font = '28px system-ui, -apple-system, Segoe UI, Roboto, Arial';
   ctx.fillText('打开链接查看完整报告', 80, h - 120);
-  ctx.fillText(args.shareUrl ?? (typeof window !== 'undefined' ? window.location.href : ''), 80, h - 70);
+  ctx.fillText(typeof window !== 'undefined' ? window.location.origin : '', 80, h - 70);
 
   return canvas.toDataURL('image/png');
 }
@@ -763,7 +762,7 @@ export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
     setShareBusy('wechat');
     setShareHint(null);
     try {
-      const url = buildResultShareUrl(assessment);
+      const url = typeof window !== 'undefined' ? window.location.href : '';
       const title = `我的测评结果：${shareContext.mbti}`;
       const text = shareContext.personaName
         ? `我的人格类型是 ${shareContext.mbti}，最像的历史人物是「${shareContext.personaName}」`
@@ -825,7 +824,7 @@ export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
           });
           setShareHint('已生成截图（部分头像因跨域被忽略）');
         } catch {
-          const fallback = createFallbackPosterPng({ ...shareContext, shareUrl: buildResultShareUrl(assessment) });
+          const fallback = createFallbackPosterPng(shareContext);
           dataUrl = fallback || null;
           setShareHint('已生成简版分享图（用于兼容跨域图片限制）');
         }
