@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { content } from '../config/content';
 import { formatTemplate } from '../utils/template';
 import type { Persona, UserAssessment } from '../mbti/types';
@@ -7,6 +7,7 @@ import { getPersonasForMbti } from '../personas';
 import { pickTopAndOthers, rankPersonas } from '../mbti/matching';
 import { getMbtiReport } from '../reports';
 import type { MbtiPersonaReportVariant, ReportItem, ReportOtherPersonaBlock } from '../reports/types';
+import { buildResultShareUrl } from '../utils/resultLink';
 
 interface ResultPageProps {
   onRestart: () => void;
@@ -23,6 +24,159 @@ function Header({ onRestart }: { onRestart: () => void }) {
       <h1 className="flex-1 text-center text-lg font-bold tracking-tight font-serif">{result.headerTitle}</h1>
       <div className="w-10"></div>
     </header>
+  );
+}
+
+function downloadDataUrl(filename: string, dataUrl: string) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    textarea.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+function createFallbackPosterPng(args: { mbti: string; personaName?: string; matchPercent?: number; shareUrl?: string }): string {
+  const w = 1080;
+  const h = 1440;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  const bg = ctx.createLinearGradient(0, 0, w, h);
+  bg.addColorStop(0, '#fff7f1');
+  bg.addColorStop(1, '#ffffff');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.fillStyle = 'rgba(20, 20, 20, 0.85)';
+  ctx.font = 'bold 56px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  ctx.fillText('测评结果', 80, 150);
+
+  ctx.fillStyle = 'rgba(20, 20, 20, 0.65)';
+  ctx.font = '32px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  ctx.fillText('轻心理 · 历史人格', 80, 210);
+
+  ctx.fillStyle = 'rgba(212, 83, 83, 0.95)';
+  ctx.font = 'bold 96px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  ctx.fillText(args.mbti, 80, 360);
+
+  ctx.fillStyle = 'rgba(20, 20, 20, 0.75)';
+  ctx.font = 'bold 52px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  const persona = args.personaName ? `最像你：${args.personaName}` : '最像你：—';
+  ctx.fillText(persona, 80, 470);
+
+  ctx.fillStyle = 'rgba(20, 20, 20, 0.55)';
+  ctx.font = '36px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  if (typeof args.matchPercent === 'number') {
+    ctx.fillText(`匹配度：${args.matchPercent}%`, 80, 545);
+  }
+
+  ctx.fillStyle = 'rgba(20, 20, 20, 0.35)';
+  ctx.font = '28px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+  ctx.fillText('打开链接查看完整报告', 80, h - 120);
+  ctx.fillText(args.shareUrl ?? (typeof window !== 'undefined' ? window.location.href : ''), 80, h - 70);
+
+  return canvas.toDataURL('image/png');
+}
+
+function ShareSheet({
+  open,
+  busy,
+  hint,
+  onClose,
+  onShareWeChat,
+  onSaveImage,
+}: {
+  open: boolean;
+  busy: 'wechat' | 'image' | null;
+  hint: string | null;
+  onClose: () => void;
+  onShareWeChat: () => void;
+  onSaveImage: () => void;
+}) {
+  return (
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          data-share-ui="true"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100]"
+          onClick={onClose}
+        >
+          <div className="absolute inset-0 bg-black/35 backdrop-blur-[2px]" />
+          <motion.div
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+            className="absolute bottom-0 left-0 right-0 max-w-md mx-auto bg-white rounded-t-3xl p-5 border border-primary/10 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1.5 bg-primary/10 rounded-full mx-auto mb-4" />
+            <h4 className="text-base font-bold text-primary text-center font-serif">分享你的结果</h4>
+            <p className="text-xs text-primary/60 text-center mt-1">可分享到微信，或保存为图片</p>
+
+            <div className="grid grid-cols-2 gap-3 mt-5">
+              <button
+                onClick={onShareWeChat}
+                disabled={busy !== null}
+                className={`h-12 rounded-2xl font-bold text-sm border ${
+                  busy !== null ? 'bg-gray-100 text-primary/40 border-primary/10 cursor-not-allowed' : 'bg-white text-primary border-primary/20 active:bg-primary/5'
+                }`}
+              >
+                {busy === 'wechat' ? '处理中…' : '分享到微信'}
+              </button>
+              <button
+                onClick={onSaveImage}
+                disabled={busy !== null}
+                className={`h-12 rounded-2xl font-bold text-sm ${
+                  busy !== null ? 'bg-gray-200 text-white/70 cursor-not-allowed' : 'bg-accent text-white active:opacity-90'
+                }`}
+              >
+                {busy === 'image' ? '生成中…' : '保存为截图'}
+              </button>
+            </div>
+
+            {hint ? <p className="text-xs text-primary/60 mt-4 text-center">{hint}</p> : null}
+
+            <button onClick={onClose} className="w-full h-11 mt-5 rounded-2xl bg-primary/5 text-primary font-bold text-sm active:bg-primary/10">
+              取消
+            </button>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }
 
@@ -207,7 +361,12 @@ function ReportResultLayout({
 
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="relative">
-          <img alt={topMatch.persona.name} className="w-full aspect-square object-cover object-top" src={topMatch.persona.imageUrl} />
+          <img
+            crossOrigin="anonymous"
+            alt={topMatch.persona.name}
+            className="w-full aspect-square object-cover object-top"
+            src={topMatch.persona.imageUrl}
+          />
         </div>
         <div className="p-6 space-y-3">
           <p className="text-xs font-bold tracking-widest text-primary/60">第一部分：与你最相似的历史人物 · 主魂</p>
@@ -366,11 +525,13 @@ function ReportResultLayout({
 
 function LegacyResultLayout({
   onRestart,
+  onShare,
   assessment,
   topMatch,
   otherMatches,
 }: {
   onRestart: () => void;
+  onShare: () => void;
   assessment: UserAssessment;
   topMatch: { persona: Persona; similarityPercent: number; matchPercent: number } | null;
   otherMatches: { persona: Persona; similarityPercent: number; matchPercent: number }[];
@@ -403,6 +564,7 @@ function LegacyResultLayout({
         <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="relative">
             <img
+              crossOrigin="anonymous"
               alt={topMatch.persona.name}
               className="w-full aspect-square object-cover object-top"
               src={topMatch.persona.imageUrl}
@@ -486,7 +648,12 @@ function LegacyResultLayout({
             {otherMatches.map((person) => (
               <div key={person.persona.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-start gap-4">
                 <div className="relative shrink-0 w-16 h-16 rounded-full overflow-hidden border-2 border-primary/10">
-                  <img alt={person.persona.name} className="w-full h-full object-cover" src={person.persona.imageUrl} />
+                  <img
+                    crossOrigin="anonymous"
+                    alt={person.persona.name}
+                    className="w-full h-full object-cover"
+                    src={person.persona.imageUrl}
+                  />
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between items-start mb-1">
@@ -550,7 +717,10 @@ function LegacyResultLayout({
         >
           {result.restartButtonText}
         </button>
-        <button className="flex-[1.5] py-3 px-4 rounded-full bg-accent text-white font-bold text-sm shadow-lg active:opacity-90 transition-opacity cursor-pointer">
+        <button
+          onClick={onShare}
+          className="flex-[1.5] py-3 px-4 rounded-full bg-accent text-white font-bold text-sm shadow-lg active:opacity-90 transition-opacity cursor-pointer"
+        >
           {result.shareButtonText}
         </button>
       </footer>
@@ -560,6 +730,11 @@ function LegacyResultLayout({
 
 export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
   const result = content.result;
+  const captureRef = useRef<HTMLDivElement | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareBusy, setShareBusy] = useState<'wechat' | 'image' | null>(null);
+  const [shareHint, setShareHint] = useState<string | null>(null);
+
   const personas = getPersonasForMbti(assessment.mbti);
   const ranked = rankPersonas(assessment, personas as Persona[], {
     softmaxTau: result.matchSoftmaxTau,
@@ -570,9 +745,111 @@ export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
   const report = getMbtiReport(assessment.mbti);
   const variant = topMatch ? report?.mainByPersonaId?.[topMatch.persona.id] : null;
 
+  const shareContext = useMemo(() => {
+    return {
+      mbti: assessment.mbti,
+      personaName: topMatch?.persona.name,
+      matchPercent: topMatch?.matchPercent,
+    };
+  }, [assessment.mbti, topMatch?.matchPercent, topMatch?.persona.name]);
+
+  const openShare = () => {
+    setShareHint(null);
+    setShareOpen(true);
+  };
+
+  const handleShareWeChat = async () => {
+    if (shareBusy) return;
+    setShareBusy('wechat');
+    setShareHint(null);
+    try {
+      const url = buildResultShareUrl(assessment);
+      const title = `我的测评结果：${shareContext.mbti}`;
+      const text = shareContext.personaName
+        ? `我的人格类型是 ${shareContext.mbti}，最像的历史人物是「${shareContext.personaName}」`
+        : `我的人格类型是 ${shareContext.mbti}`;
+
+      if ((navigator as any).share) {
+        try {
+          await (navigator as any).share({ title, text, url });
+          setShareOpen(false);
+          return;
+        } catch {
+          // fall through
+        }
+      }
+
+      const ok = await copyToClipboard(url);
+      setShareHint(ok ? '已复制链接：可在微信里粘贴发送/转发' : '当前浏览器不支持一键分享，请手动复制地址栏链接');
+    } finally {
+      setShareBusy(null);
+    }
+  };
+
+  const handleSaveImage = async () => {
+    if (shareBusy) return;
+    setShareBusy('image');
+    setShareHint('正在生成图片…');
+
+    try {
+      const node = captureRef.current;
+      if (!node) {
+        setShareHint('截图失败：未找到页面内容');
+        return;
+      }
+
+      const { toPng } = await import('html-to-image');
+
+      const baseFilter = (n: Node) => {
+        const el = n as any;
+        if (el?.dataset?.shareUi === 'true') return false;
+        if (typeof el?.closest === 'function' && el.closest('[data-share-ui="true"]')) return false;
+        return true;
+      };
+
+      const opts = {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        filter: baseFilter,
+      } as const;
+
+      let dataUrl: string | null = null;
+      try {
+        dataUrl = await toPng(node, opts);
+      } catch {
+        try {
+          dataUrl = await toPng(node, {
+            ...opts,
+            filter: (n: Node) => baseFilter(n) && (n as any)?.nodeName !== 'IMG',
+          });
+          setShareHint('已生成截图（部分头像因跨域被忽略）');
+        } catch {
+          const fallback = createFallbackPosterPng({ ...shareContext, shareUrl: buildResultShareUrl(assessment) });
+          dataUrl = fallback || null;
+          setShareHint('已生成简版分享图（用于兼容跨域图片限制）');
+        }
+      }
+
+      if (!dataUrl) {
+        setShareHint('截图失败：请稍后重试');
+        return;
+      }
+
+      downloadDataUrl(`result-${shareContext.mbti}.png`, dataUrl);
+    } finally {
+      setShareBusy(null);
+    }
+  };
+
   if (topMatch && variant) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen pb-24 bg-tea-white text-primary font-sans">
+      <motion.div
+        ref={captureRef}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="min-h-screen pb-24 bg-tea-white text-primary font-sans"
+      >
         <Header onRestart={onRestart} />
         <ReportResultLayout assessment={assessment} topMatch={topMatch} otherMatches={otherMatches} variant={variant} />
         <footer className="fixed bottom-0 left-0 right-0 bg-tea-white/95 backdrop-blur-lg border-t border-primary/10 p-4 flex gap-4 max-w-md mx-auto">
@@ -582,13 +859,36 @@ export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
           >
             {result.restartButtonText}
           </button>
-          <button className="flex-[1.5] py-3 px-4 rounded-full bg-accent text-white font-bold text-sm shadow-lg active:opacity-90 transition-opacity cursor-pointer">
+          <button
+            onClick={openShare}
+            className="flex-[1.5] py-3 px-4 rounded-full bg-accent text-white font-bold text-sm shadow-lg active:opacity-90 transition-opacity cursor-pointer"
+          >
             {result.shareButtonText}
           </button>
         </footer>
+        <ShareSheet
+          open={shareOpen}
+          busy={shareBusy}
+          hint={shareHint}
+          onClose={() => (shareBusy ? null : setShareOpen(false))}
+          onShareWeChat={handleShareWeChat}
+          onSaveImage={handleSaveImage}
+        />
       </motion.div>
     );
   }
 
-  return <LegacyResultLayout onRestart={onRestart} assessment={assessment} topMatch={topMatch} otherMatches={otherMatches} />;
+  return (
+    <div ref={captureRef}>
+      <LegacyResultLayout onRestart={onRestart} onShare={openShare} assessment={assessment} topMatch={topMatch} otherMatches={otherMatches} />
+      <ShareSheet
+        open={shareOpen}
+        busy={shareBusy}
+        hint={shareHint}
+        onClose={() => (shareBusy ? null : setShareOpen(false))}
+        onShareWeChat={handleShareWeChat}
+        onSaveImage={handleSaveImage}
+      />
+    </div>
+  );
 }

@@ -39,3 +39,5 @@
 ## 2026-03-02
 
 - 修复生产环境验证码校验 404：Vercel 部署补齐同源 API（`/api/captchas/verify` + 兼容 `/api/captcha/verify`）转发到第三方 `/api/verify`：`api/captchas/verify.ts`、`api/captcha/verify.ts`
+- 结果页「分享结果」改为底部弹框：支持调起系统分享（微信）+ 保存为图片（跨域图片失败时自动降级为简版分享图）：`src/components/ResultPage.tsx`
+- 分享到微信改为“结果页链接”：使用方案 A，将测评结果写入 URL 参数 `?r=`，打开链接可直接还原结果页：`src/utils/resultLink.ts`、`src/App.tsx`、`src/components/ResultPage.tsx`
