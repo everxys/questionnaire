@@ -35,3 +35,7 @@
  - 新增 ESFP 文案数据库（按“主魂”人物区分版本）：`src/reports/mbti/ESFP.json`
  - 新增 ESTJ 文案数据库（按“主魂”人物区分版本）：`src/reports/mbti/ESTJ.json`
  - 报告结果页支持每个“主魂版本”自定义四维解读文案：`src/components/ResultPage.tsx`
+
+## 2026-03-02
+
+- 修复生产环境验证码校验 404：前端校验地址改为直连第三方 `/api/verify`：`src/config/content/landing.json`
