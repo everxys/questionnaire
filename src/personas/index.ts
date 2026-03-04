@@ -36,7 +36,20 @@ const PERSONAS_BY_MBTI: Record<MbtiType, Persona[]> = {
   ISTP: ISTP as Persona[]
 };
 
+/**
+ * 处理 imageUrl 中的占位符，移除 {} 括号
+ * 例如：https://.../{ESTJ_范仲淹.jpg} → https://.../ESTJ_范仲淹.jpg
+ */
+function processImageUrl(imageUrl: string): string {
+  return imageUrl.replace(/\{([^{}]+)\}/g, '$1');
+}
+
 export function getPersonasForMbti(mbti: MbtiType): Persona[] {
-  return PERSONAS_BY_MBTI[mbti] ?? [];
+  const personas = PERSONAS_BY_MBTI[mbti] ?? [];
+  // 处理 imageUrl 中的占位符
+  return personas.map((persona) => ({
+    ...persona,
+    imageUrl: processImageUrl(persona.imageUrl),
+  }));
 }
 
