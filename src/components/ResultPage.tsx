@@ -361,10 +361,17 @@ function ReportResultLayout({
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="relative">
           <img
-            crossOrigin="anonymous"
             alt={topMatch.persona.name}
             className="w-full aspect-square object-cover object-top"
             src={topMatch.persona.imageUrl}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              // 如果加载失败，移除 crossOrigin 重试
+              if (!target.getAttribute('data-retry')) {
+                target.setAttribute('data-retry', 'true');
+                target.src = topMatch.persona.imageUrl;
+              }
+            }}
           />
         </div>
         <div className="p-6 space-y-3">
@@ -563,10 +570,16 @@ function LegacyResultLayout({
         <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="relative">
             <img
-              crossOrigin="anonymous"
               alt={topMatch.persona.name}
               className="w-full aspect-square object-cover object-top"
               src={topMatch.persona.imageUrl}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (!target.getAttribute('data-retry')) {
+                  target.setAttribute('data-retry', 'true');
+                  target.src = topMatch.persona.imageUrl;
+                }
+              }}
             />
             <div className="absolute bottom-4 right-4 bg-accent text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
               {formatTemplate(result.matchTemplate, { percent: topMatch.matchPercent })}
@@ -648,10 +661,16 @@ function LegacyResultLayout({
               <div key={person.persona.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-start gap-4">
                 <div className="relative shrink-0 w-16 h-16 rounded-full overflow-hidden border-2 border-primary/10">
                   <img
-                    crossOrigin="anonymous"
                     alt={person.persona.name}
                     className="w-full h-full object-cover"
                     src={person.persona.imageUrl}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (!target.getAttribute('data-retry')) {
+                        target.setAttribute('data-retry', 'true');
+                        target.src = person.persona.imageUrl;
+                      }
+                    }}
                   />
                 </div>
                 <div className="flex-1">
