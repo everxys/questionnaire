@@ -26,6 +26,7 @@ export default function LandingPage({ onStart }: LandingPageProps) {
 
   const codeLength = Math.max(1, Math.min(10, Math.floor(captcha.codeLength || 5)));
   const [code, setCode] = useState<string[]>(Array.from({ length: codeLength }, () => ''));
+  const [isComposing, setIsComposing] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasExistingToken = typeof existingToken === 'string' && existingToken.trim().length > 0;
@@ -151,6 +152,8 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                         autoComplete="one-time-code"
                         maxLength={1}
                         onChange={(e) => {
+                          // 在输入法组合期间不处理，避免 iOS 重复输入
+                          if (isComposing) return;
                           const raw = e.target.value.toUpperCase();
                           const nextChar = (raw.match(/[A-Z0-9]/) ?? [''])[0];
 
@@ -162,6 +165,25 @@ export default function LandingPage({ onStart }: LandingPageProps) {
 
                           if (nextChar && index < codeLength - 1) {
                             inputRefs.current[index + 1]?.focus();
+                          }
+                        }}
+                        onCompositionStart={() => {
+                          setIsComposing(true);
+                        }}
+                        onCompositionEnd={(e) => {
+                          setIsComposing(false);
+                          // 组合结束后处理输入
+                          const raw = e.data.toUpperCase();
+                          const nextChar = (raw.match(/[A-Z0-9]/) ?? [''])[0];
+                          if (nextChar) {
+                            setCode((prev) => {
+                              const next = [...prev];
+                              next[index] = nextChar;
+                              return next;
+                            });
+                            if (index < codeLength - 1) {
+                              inputRefs.current[index + 1]?.focus();
+                            }
                           }
                         }}
                         onKeyDown={(e) => {
