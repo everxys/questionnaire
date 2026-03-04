@@ -164,21 +164,6 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                             inputRefs.current[index + 1]?.focus();
                           }
                         }}
-                        onCompositionEnd={(e) => {
-                          // 组合输入结束后，确保正确读取输入框的值
-                          const raw = (e.target as HTMLInputElement).value.toUpperCase();
-                          const nextChar = (raw.match(/[A-Z0-9]/) ?? [''])[0];
-                          if (nextChar) {
-                            setCode((prev) => {
-                              const next = [...prev];
-                              next[index] = nextChar;
-                              return next;
-                            });
-                            if (index < codeLength - 1) {
-                              inputRefs.current[index + 1]?.focus();
-                            }
-                          }
-                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Backspace' && !code[index] && index > 0) {
                             inputRefs.current[index - 1]?.focus();
