@@ -359,14 +359,15 @@ function ReportResultLayout({
       </section>
 
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div className="relative">
+        {/* ✅ 修复：移除固定 aspect-square，改用 w-full + object-contain，图片完整显示 */}
+        <div className="relative bg-[#f5f0eb] flex items-center justify-center">
           <img
             alt={topMatch.persona.name}
-            className="w-full aspect-square object-cover object-top"
+            className="w-full object-contain"
+            style={{ maxHeight: '480px' }}
             src={topMatch.persona.imageUrl}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              // 如果加载失败，移除 crossOrigin 重试
               if (!target.getAttribute('data-retry')) {
                 target.setAttribute('data-retry', 'true');
                 target.src = topMatch.persona.imageUrl;
@@ -568,10 +569,12 @@ function LegacyResultLayout({
       <main className="px-4 py-6 space-y-6 max-w-md mx-auto">
         {/* Hero Match Card */}
         <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div class="relative bg-slate-100">
+          {/* ✅ 修复：className（原代码误写为 class），改用 object-contain 完整显示图片 */}
+          <div className="relative bg-[#f5f0eb] flex items-center justify-center">
             <img
               alt={topMatch.persona.name}
-              className="w-full aspect-square object-contain"
+              className="w-full object-contain"
+              style={{ maxHeight: '480px' }}
               src={topMatch.persona.imageUrl}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -711,15 +714,15 @@ function LegacyResultLayout({
                 const desc = value >= 50 ? axis.highDesc : axis.lowDesc;
                 return (
                   <div key={axis.key} className="mb-6">
-                  <div className="flex justify-between text-xs font-bold mb-1">
-                    <span>{axis.label}</span>
-                    <span>{value}%</span>
+                    <div className="flex justify-between text-xs font-bold mb-1">
+                      <span>{axis.label}</span>
+                      <span>{value}%</span>
+                    </div>
+                    <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${value}%` }}></div>
+                    </div>
+                    <p className="text-xs text-primary/70 mt-2 leading-relaxed">{desc}</p>
                   </div>
-                  <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${value}%` }}></div>
-                  </div>
-                  <p className="text-xs text-primary/70 mt-2 leading-relaxed">{desc}</p>
-                </div>
                 );
               })}
             </div>
