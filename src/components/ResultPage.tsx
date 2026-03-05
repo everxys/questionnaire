@@ -82,7 +82,7 @@ function createFallbackPosterPng(args: { mbti: string; personaName?: string; mat
 
   ctx.fillStyle = 'rgba(20, 20, 20, 0.65)';
   ctx.font = '32px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-  ctx.fillText('轻心�?· 历史人格', 80, 210);
+  ctx.fillText('轻心理 · 历史人格', 80, 210);
 
   ctx.fillStyle = 'rgba(212, 83, 83, 0.95)';
   ctx.font = 'bold 96px system-ui, -apple-system, Segoe UI, Roboto, Arial';
@@ -90,7 +90,7 @@ function createFallbackPosterPng(args: { mbti: string; personaName?: string; mat
 
   ctx.fillStyle = 'rgba(20, 20, 20, 0.75)';
   ctx.font = 'bold 52px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-  const persona = args.personaName ? `最像你�?{args.personaName}` : '最像你：�?;
+  const persona = args.personaName ? `最像你：${args.personaName}` : '最像你：—';
   ctx.fillText(persona, 80, 470);
 
   ctx.fillStyle = 'rgba(20, 20, 20, 0.55)';
@@ -144,7 +144,7 @@ function ShareSheet({
           >
             <div className="w-10 h-1.5 bg-primary/10 rounded-full mx-auto mb-4" />
             <h4 className="text-base font-bold text-primary text-center font-serif">分享你的结果</h4>
-            <p className="text-xs text-primary/60 text-center mt-1">可分享到微信，或保存为图�?/p>
+            <p className="text-xs text-primary/60 text-center mt-1">可分享到微信，或保存为图片</p>
 
             <div className="grid grid-cols-2 gap-3 mt-5">
               <button
@@ -154,7 +154,7 @@ function ShareSheet({
                   busy !== null ? 'bg-gray-100 text-primary/40 border-primary/10 cursor-not-allowed' : 'bg-white text-primary border-primary/20 active:bg-primary/5'
                 }`}
               >
-                {busy === 'wechat' ? '处理中�? : '分享到微�?}
+                {busy === 'wechat' ? '处理中…' : '分享到微信'}
               </button>
               <button
                 onClick={onSaveImage}
@@ -163,7 +163,7 @@ function ShareSheet({
                   busy !== null ? 'bg-gray-200 text-white/70 cursor-not-allowed' : 'bg-accent text-white active:opacity-90'
                 }`}
               >
-                {busy === 'image' ? '生成中�? : '保存为截�?}
+                {busy === 'image' ? '生成中…' : '保存为截图'}
               </button>
             </div>
 
@@ -322,7 +322,7 @@ function axisDisplay(assessment: UserAssessment) {
       desc: sn === 'N' ? axes.N.highDesc : axes.N.lowDesc,
     },
     tf: {
-      label: tf === 'T' ? '思�?(T)' : '情感 (F)',
+      label: tf === 'T' ? '思考 (T)' : '情感 (F)',
       percent: tfPercent,
       desc: tf === 'T' ? axes.T.highDesc : axes.T.lowDesc,
     },
@@ -349,7 +349,7 @@ function ReportResultLayout({
   const report = getMbtiReport(assessment.mbti);
   const mbtiTitle = report ? `${report.type.code} ${report.type.nickname}` : assessment.mbti;
   const axes = axisDisplay(assessment);
-  const otherRoleLabels = ['你的另一�?, '异代知音'];
+  const otherRoleLabels = ['你的另一面', '异代知音'];
 
   return (
     <main className="px-4 py-6 space-y-6 max-w-md mx-auto">
@@ -359,14 +359,14 @@ function ReportResultLayout({
       </section>
 
       <section className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <div class="relative bg-slate-100">
+        <div className="relative">
           <img
             alt={topMatch.persona.name}
-            className="w-full aspect-square object-contain"
+            className="w-full aspect-square object-cover object-top"
             src={topMatch.persona.imageUrl}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              // 如果加载失败，移�?crossOrigin 重试
+              // 如果加载失败，移除 crossOrigin 重试
               if (!target.getAttribute('data-retry')) {
                 target.setAttribute('data-retry', 'true');
                 target.src = topMatch.persona.imageUrl;
@@ -375,12 +375,12 @@ function ReportResultLayout({
           />
         </div>
         <div className="p-6 space-y-3">
-          <p className="text-xs font-bold tracking-widest text-primary/60">第一部分：与你最相似的历史人�?· 主魂</p>
+          <p className="text-xs font-bold tracking-widest text-primary/60">第一部分：与你最相似的历史人物 · 主魂</p>
           <h3 className="text-2xl font-bold font-serif">
-            【主�?· 最像你】{topMatch.persona.name} · {variant.mainPersona.title.split('·')[1]?.trim() ?? ''}
+            【主魂 · 最像你】{topMatch.persona.name} · {variant.mainPersona.title.split('·')[1]?.trim() ?? ''}
           </h3>
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-primary/70 font-bold">性格相似�?/p>
+            <p className="text-sm text-primary/70 font-bold">性格相似度</p>
             <PercentBar percent={topMatch.similarityPercent} />
           </div>
           {variant.mainPersona.tagline ? <p className="text-primary/80 text-sm italic">{variant.mainPersona.tagline}</p> : null}
@@ -451,7 +451,7 @@ function ReportResultLayout({
         <p className="text-xs font-bold tracking-widest text-primary/60">第四部分：你的性格画像</p>
 
         <div className="space-y-3">
-          <h4 className="font-bold text-lg text-accent font-serif">四维雷达�?/h4>
+          <h4 className="font-bold text-lg text-accent font-serif">四维雷达图</h4>
           <RadarDiamond
             topLabel={axes.ei.label}
             rightLabel={axes.sn.label}
@@ -782,10 +782,10 @@ export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
     setShareHint(null);
     try {
       const url = typeof window !== 'undefined' ? window.location.href : '';
-      const title = `我的测评结果�?{shareContext.mbti}`;
+      const title = `我的测评结果：${shareContext.mbti}`;
       const text = shareContext.personaName
-        ? `我的人格类型�?${shareContext.mbti}，最像的历史人物是�?{shareContext.personaName}」`
-        : `我的人格类型�?${shareContext.mbti}`;
+        ? `我的人格类型是 ${shareContext.mbti}，最像的历史人物是「${shareContext.personaName}」`
+        : `我的人格类型是 ${shareContext.mbti}`;
 
       if ((navigator as any).share) {
         try {
@@ -798,7 +798,7 @@ export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
       }
 
       const ok = await copyToClipboard(url);
-      setShareHint(ok ? '已复制链接：可在微信里粘贴发�?转发' : '当前浏览器不支持一键分享，请手动复制地址栏链�?);
+      setShareHint(ok ? '已复制链接：可在微信里粘贴发送/转发' : '当前浏览器不支持一键分享，请手动复制地址栏链接');
     } finally {
       setShareBusy(null);
     }
@@ -807,7 +807,7 @@ export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
   const handleSaveImage = async () => {
     if (shareBusy) return;
     setShareBusy('image');
-    setShareHint('正在生成图片�?);
+    setShareHint('正在生成图片…');
 
     try {
       const node = captureRef.current;
@@ -841,7 +841,7 @@ export default function ResultPage({ onRestart, assessment }: ResultPageProps) {
             ...opts,
             filter: (n: Node) => baseFilter(n) && (n as any)?.nodeName !== 'IMG',
           });
-          setShareHint('已生成截图（部分头像因跨域被忽略�?);
+          setShareHint('已生成截图（部分头像因跨域被忽略）');
         } catch {
           const fallback = createFallbackPosterPng(shareContext);
           dataUrl = fallback || null;
