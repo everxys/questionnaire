@@ -109,7 +109,7 @@ export default function QuestionnairePage({
       </div>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+      <main className="flex-1 flex flex-col items-center justify-start px-6 pt-8 text-center">        
         <motion.h1
           key={currentQuestion.id}
           initial={{ opacity: 0, y: 8 }}
@@ -123,24 +123,21 @@ export default function QuestionnairePage({
           {content.questionnaire.hint}
         </p>
 
-        {/* Buttons */}
-        <div className="flex gap-3 mt-8">
+              {/* Buttons */}
+        <div className="grid grid-cols-7 gap-2 w-full max-w-md mt-8 px-2">
           {buttons.map((btn) => {
-            const isSelected =
-              selectedValue === btn.value;
+            const isSelected = selectedValue === btn.value;
 
             return (
               <button
                 key={btn.value}
-                onClick={() =>
-                  handleSelect(btn.value)
-                }
+                onClick={() => handleSelect(btn.value)}
                 className={`
-                  w-10 aspect-square shrink-0 rounded-full transition-all
+                  w-full aspect-square rounded-full transition-all duration-200
                   ${btn.color}
                   ${
                     isSelected
-                      ? 'scale-110 shadow-[0_0_0_3px_rgba(0,0,0,0.2)]'
+                      ? 'scale-110 shadow-[0_0_0_3px_rgba(0,0,0,0.25)]'
                       : 'opacity-80 hover:opacity-100'
                   }
                 `}
