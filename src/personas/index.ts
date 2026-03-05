@@ -37,11 +37,13 @@ const PERSONAS_BY_MBTI: Record<MbtiType, Persona[]> = {
 };
 
 /**
- * 处理 imageUrl 中的占位符，移除 {} 括号
- * 例如：https://.../{ESTJ_范仲淹.jpg} → https://.../ESTJ_范仲淹.jpg
+ * 处理 imageUrl 中的占位符，对 {} 及其内容进行 URL 编码
+ * 例如：https://.../{ESTJ_范仲淹.jpg} → https://.../%7BESTJ_%E8%8C%83%E4%BB%B2%E6%B7%B9.jpg%7D
  */
 function processImageUrl(imageUrl: string): string {
-  return imageUrl.replace(/\{([^{}]+)\}/g, '$1');
+  return imageUrl.replace(/\{[^{}]+\}/g, (match) => {
+    return encodeURIComponent(match);
+  });
 }
 
 export function getPersonasForMbti(mbti: MbtiType): Persona[] {
@@ -52,4 +54,3 @@ export function getPersonasForMbti(mbti: MbtiType): Persona[] {
     imageUrl: processImageUrl(persona.imageUrl),
   }));
 }
-
