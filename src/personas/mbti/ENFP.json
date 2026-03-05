@@ -2,7 +2,7 @@
   {
     "id": "enfp-1",
     "name": "李白",
-    "imageUrl": "https://images.everxys.top/images/{ENFP_李白.jpg}",
+    "imageUrl": "https://images.everxys.top/questionnaire/{ENFP_李白.jpg}",
     "intro": "唐代浪漫主义诗人，被誉为“诗仙”，诗风豪放飘逸。",
     "analysis": "作为ENFP的你，天生就是李白那样追光的人。你热情似火，想象力无边，相信生活有无限可能。你讨厌沉闷，渴望冒险，总能把最平常的日子过得诗意盎然。他“仰天大笑出门去”，你也会为心中的冲动说走就走。你的热情会感染身边的每一个人，你是那种能让聚会活起来、能让团队燃起来的人。请永远保护你心中那团火。",
     "scores": {
@@ -15,7 +15,7 @@
   {
     "id": "enfp-2",
     "name": "徐霞客",
-    "imageUrl": "https://images.everxys.top/images/{ENFP_徐霞客.jpg}",
+    "imageUrl": "https://images.everxys.top/questionnaire/{ENFP_徐霞客.jpg}",
     "intro": "明代地理学家、旅行家，著有《徐霞客游记》。",
     "analysis": "你和徐霞客一样，对世界充满好奇。你不想被一方天地困住，你想亲眼看看山的那边是什么。他一生都在路上，用双脚丈量山河；你也在探索属于你的世界——也许不是地理的远方，而是知识的边界、能力的极限。你的探索精神，让你永远年轻，永远热泪盈眶。",
     "scores": {
@@ -28,7 +28,7 @@
   {
     "id": "enfp-3",
     "name": "郑和",
-    "imageUrl": "https://images.everxys.top/images/{ENFP_郑和.jpg}",
+    "imageUrl": "https://images.everxys.top/questionnaire/{ENFP_郑和.jpg}",
     "intro": "明代航海家、外交家，七下西洋，开创世界航海史壮举。",
     "analysis": "你和郑和一样，胸怀天下。你不局限于眼前的琐事，你渴望看到更大的图景，连接更远的人群。他七下西洋，带去和平与文明；你也在用自己的方式，成为那个连接不同世界的人。你的开放和包容，让你成为文化交流的使者。你的胸怀，决定了你的舞台有多大。",
     "scores": {
