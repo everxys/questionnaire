@@ -125,28 +125,24 @@ export default function QuestionnairePage({
 
               {/* Buttons */}
         <div className="grid grid-cols-7 gap-2 w-full max-w-md mt-8 px-2">
-          {options.map((option, index) => {
-            const total = options.length
-            const center = (total - 1) / 2
-            const distance = Math.abs(index - center)
-
-            // 最大 1，最小 0.75（你可以自己调）
-            const scale = 1 - (distance / center) * 0.25
+          {buttons.map((btn) => {
+            const isSelected = selectedValue === btn.value;
 
             return (
-              <motion.button
-                key={index}
-                whileTap={{ scale: scale * 0.9 }}
-                className="flex items-center justify-center rounded-full bg-accent text-white font-bold shadow-md transition-all"
-                style={{
-                  width: 64,
-                  height: 64,
-                  transform: `scale(${scale})`,
-                }}
-              >
-                {option.label}
-              </motion.button>
-            )
+              <button
+                key={btn.value}
+                onClick={() => handleSelect(btn.value)}
+                className={`
+                  w-full aspect-square rounded-full transition-all duration-200
+                  ${btn.color}
+                  ${
+                    isSelected
+                      ? 'scale-110 shadow-[0_0_0_3px_rgba(0,0,0,0.25)]'
+                      : 'opacity-80 hover:opacity-100'
+                  }
+                `}
+              />
+            );
           })}
         </div>
 
