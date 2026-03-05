@@ -113,17 +113,7 @@ export default function LandingPage({ onStart }: LandingPageProps) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 w-full max-w-md z-10">
-        {/* Decorative Element */}
-        <div className="w-full h-48 relative mb-8 flex items-center justify-center opacity-40">
-          <svg className="w-full h-full text-primary/20 fill-current" viewBox="0 0 400 200">
-            <path d="M0,160 Q100,60 200,140 T400,100 V200 H0 Z"></path>
-            <path d="M50,180 Q150,100 250,160 T450,120 V200 H50 Z" opacity="0.5"></path>
-          </svg>
-          <div className="absolute inset-0 bg-gradient-to-t from-tea-white via-transparent to-transparent"></div>
-        </div>
-
-        <div className="text-center space-y-4 relative z-10">
+      <main className="flex-1 flex flex-col items-center justify-start pt-16 px-6 w-full max-w-md z-10">        <div className="text-center space-y-4 relative z-10">
           <h1 className="text-primary text-[32px] font-bold leading-tight tracking-tight font-serif">
             {content.landing.title}
           </h1>
