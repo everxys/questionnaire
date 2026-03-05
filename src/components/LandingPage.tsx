@@ -33,8 +33,25 @@ export default function LandingPage({ onStart }: LandingPageProps) {
   const [justVerified, setJustVerified] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // Fix: track iOS IME composition state to prevent double-input
-  const isComposingRef = useRef(false);
+  // Track iOS IME composition state per input cell
+  const isComposingRef = useRef<boolean[]>(Array.from({ length: 10 }, () => false));
+
+  // Shared commit logic: extract last valid char and advance focus
+  const commitChar = (index: number, rawValue: string) => {
+    const clean = rawValue.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const nextChar = clean.slice(-1);
+
+    setCode((prev) => {
+      if (prev[index] === nextChar) return prev;
+      const next = [...prev];
+      next[index] = nextChar;
+      return next;
+    });
+
+    if (nextChar && index < codeLength - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
 
   const handleStart = async () => {
     if (!captcha.enabled) {
@@ -146,46 +163,20 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                         autoCorrect="off"
                         autoCapitalize="characters"
                         spellCheck={false}
-                        // maxLength=2 gives iOS IME room to compose without being clipped
-                        maxLength={2}
+                        maxLength={1}
                         onCompositionStart={() => {
-                          isComposingRef.current = true;
+                          // Mark this cell as composing so onChange is ignored
+                          isComposingRef.current[index] = true;
                         }}
                         onCompositionEnd={(e) => {
-                          isComposingRef.current = false;
-                          const raw = e.currentTarget.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                          const nextChar = raw.slice(-1);
-
-                          setCode((prev) => {
-                            const next = [...prev];
-                            next[index] = nextChar;
-                            return next;
-                          });
-
-                          // Force-reset the native input value to prevent stale IME state
-                          e.currentTarget.value = nextChar;
-
-                          if (nextChar && index < codeLength - 1) {
-                            inputRefs.current[index + 1]?.focus();
-                          }
+                          // Composition finished — commit the final character
+                          isComposingRef.current[index] = false;
+                          commitChar(index, e.currentTarget.value);
                         }}
                         onChange={(e) => {
-                          // Skip while iOS IME is still composing — onCompositionEnd handles commit
-                          if (isComposingRef.current) return;
-
-                          const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                          const nextChar = raw.slice(-1);
-
-                          setCode((prev) => {
-                            if (prev[index] === nextChar) return prev;
-                            const next = [...prev];
-                            next[index] = nextChar;
-                            return next;
-                          });
-
-                          if (nextChar && index < codeLength - 1) {
-                            inputRefs.current[index + 1]?.focus();
-                          }
+                          // During IME composition on iOS, skip — onCompositionEnd handles it
+                          if (isComposingRef.current[index]) return;
+                          commitChar(index, e.target.value);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Backspace' && !code[index] && index > 0) {
