@@ -33,6 +33,9 @@ export default function LandingPage({ onStart }: LandingPageProps) {
   const [justVerified, setJustVerified] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
+  // Fix: track iOS IME composition state to prevent double-input
+  const isComposingRef = useRef(false);
+
   const handleStart = async () => {
     if (!captcha.enabled) {
       onStart();
@@ -90,15 +93,15 @@ export default function LandingPage({ onStart }: LandingPageProps) {
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="flex flex-col min-h-screen items-center justify-between bg-tea-white text-primary overflow-hidden relative"
     >
       {/* Background Texture */}
-      <div 
-        className="fixed inset-0 pointer-events-none opacity-[0.03] z-0" 
+      <div
+        className="fixed inset-0 pointer-events-none opacity-[0.03] z-0"
         style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuDwfgZpUMGsSn05hQ-RIxEnuTpq992c_wt_opwVXwlbgfuc0JpRtBi3GOnB3Pr1digfs5ZtF1uSskkvUyT0WKYkKDu97oHwhmSG8yGBckdjD5_GcWCcd6U-IuTWDe6gUBvpsUd6Elhu6H1_VBO9Mx32VGMNBZhEer8Kalvxhvd0bChVwt7uQ_rBuzGpK5k10-e4ixoJHCODUT0nd0yYf33f4mtFJeVAKs_Qnp9E7mpvgHWjSD2VhVJdzcRiMh4NH2gS6bqHWI0KqZCh')" }}
       />
 
@@ -113,7 +116,8 @@ export default function LandingPage({ onStart }: LandingPageProps) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col items-center justify-start pt-16 px-6 w-full max-w-md z-10">        <div className="text-center space-y-4 relative z-10">
+      <main className="flex-1 flex flex-col items-center justify-start pt-16 px-6 w-full max-w-md z-10">
+        <div className="text-center space-y-4 relative z-10">
           <h1 className="text-primary text-[32px] font-bold leading-tight tracking-tight font-serif">
             {content.landing.title}
           </h1>
@@ -139,8 +143,36 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                         value={value}
                         inputMode="text"
                         autoComplete="one-time-code"
-                        maxLength={1}
+                        autoCorrect="off"
+                        autoCapitalize="characters"
+                        spellCheck={false}
+                        // maxLength=2 gives iOS IME room to compose without being clipped
+                        maxLength={2}
+                        onCompositionStart={() => {
+                          isComposingRef.current = true;
+                        }}
+                        onCompositionEnd={(e) => {
+                          isComposingRef.current = false;
+                          const raw = e.currentTarget.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                          const nextChar = raw.slice(-1);
+
+                          setCode((prev) => {
+                            const next = [...prev];
+                            next[index] = nextChar;
+                            return next;
+                          });
+
+                          // Force-reset the native input value to prevent stale IME state
+                          e.currentTarget.value = nextChar;
+
+                          if (nextChar && index < codeLength - 1) {
+                            inputRefs.current[index + 1]?.focus();
+                          }
+                        }}
                         onChange={(e) => {
+                          // Skip while iOS IME is still composing — onCompositionEnd handles commit
+                          if (isComposingRef.current) return;
+
                           const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
                           const nextChar = raw.slice(-1);
 
