@@ -151,10 +151,11 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                         autoComplete="one-time-code"
                         maxLength={1}
                         onChange={(e) => {
-                          const raw = e.target.value.toUpperCase();
-                          const nextChar = (raw.match(/[A-Z0-9]/) ?? [''])[0];
+                          const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                          const nextChar = raw.slice(-1);
 
                           setCode((prev) => {
+                            if (prev[index] === nextChar) return prev;
                             const next = [...prev];
                             next[index] = nextChar;
                             return next;
