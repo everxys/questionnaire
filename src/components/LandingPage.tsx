@@ -36,6 +36,9 @@ export default function LandingPage({ onStart }: LandingPageProps) {
   // Track iOS IME composition state per input cell
   const isComposingRef = useRef<boolean[]>(Array.from({ length: 10 }, () => false));
 
+  // Guard against iOS firing onChange right after onCompositionEnd for the same keystroke
+  const justCommittedRef = useRef<{ index: number; time: number }>({ index: -1, time: 0 });
+
   // Shared commit logic: extract last valid char and advance focus
   const commitChar = (index: number, rawValue: string) => {
     const clean = rawValue.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -172,10 +175,15 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                           // Composition finished — commit the final character
                           isComposingRef.current[index] = false;
                           commitChar(index, e.currentTarget.value);
+                          // Mark this cell so the immediately-following onChange is skipped (iOS fires both)
+                          justCommittedRef.current = { index, time: Date.now() };
                         }}
                         onChange={(e) => {
                           // During IME composition on iOS, skip — onCompositionEnd handles it
                           if (isComposingRef.current[index]) return;
+                          // Skip if onCompositionEnd just committed for this cell (iOS double-fire guard)
+                          const jc = justCommittedRef.current;
+                          if (jc.index === index && Date.now() - jc.time < 50) return;
                           commitChar(index, e.target.value);
                         }}
                         onKeyDown={(e) => {
@@ -210,11 +218,10 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                 <button
                   onClick={handleStart}
                   disabled={isVerifying || (!verified && code.join('').trim().length !== codeLength)}
-                  className={`w-full sm:w-auto h-12 px-5 rounded-full text-white font-bold shadow-lg active:scale-95 transition-transform whitespace-nowrap text-sm ${
-                    isVerifying || (!verified && code.join('').trim().length !== codeLength)
-                      ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-accent hover:bg-accent/90 cursor-pointer'
-                  }`}
+                  className={`w-full sm:w-auto h-12 px-5 rounded-full text-white font-bold shadow-lg active:scale-95 transition-transform whitespace-nowrap text-sm ${isVerifying || (!verified && code.join('').trim().length !== codeLength)
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-accent hover:bg-accent/90 cursor-pointer'
+                    }`}
                 >
                   {isVerifying ? captcha.verifyingText : captcha.verifyButtonText}
                 </button>
