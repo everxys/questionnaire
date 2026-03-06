@@ -33,12 +33,6 @@ export default function LandingPage({ onStart }: LandingPageProps) {
   const [justVerified, setJustVerified] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  // Track iOS IME composition state per input cell
-  const isComposingRef = useRef<boolean[]>(Array.from({ length: 10 }, () => false));
-
-  // Guard against iOS firing onChange right after onCompositionEnd for the same keystroke
-  const justCommittedRef = useRef<{ index: number; time: number }>({ index: -1, time: 0 });
-
   // Shared commit logic: extract last valid char and advance focus
   const commitChar = (index: number, rawValue: string) => {
     const clean = rawValue.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -52,7 +46,10 @@ export default function LandingPage({ onStart }: LandingPageProps) {
     });
 
     if (nextChar && index < codeLength - 1) {
-      inputRefs.current[index + 1]?.focus();
+      // Delay focus so iOS finishes its IME cycle on this cell first
+      setTimeout(() => {
+        inputRefs.current[index + 1]?.focus();
+      }, 0);
     }
   };
 
@@ -167,23 +164,7 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                         autoCapitalize="characters"
                         spellCheck={false}
                         maxLength={1}
-                        onCompositionStart={() => {
-                          // Mark this cell as composing so onChange is ignored
-                          isComposingRef.current[index] = true;
-                        }}
-                        onCompositionEnd={(e) => {
-                          // Composition finished — commit the final character
-                          isComposingRef.current[index] = false;
-                          commitChar(index, e.currentTarget.value);
-                          // Mark this cell so the immediately-following onChange is skipped (iOS fires both)
-                          justCommittedRef.current = { index, time: Date.now() };
-                        }}
                         onChange={(e) => {
-                          // During IME composition on iOS, skip — onCompositionEnd handles it
-                          if (isComposingRef.current[index]) return;
-                          // Skip if onCompositionEnd just committed for this cell (iOS double-fire guard)
-                          const jc = justCommittedRef.current;
-                          if (jc.index === index && Date.now() - jc.time < 50) return;
                           commitChar(index, e.target.value);
                         }}
                         onKeyDown={(e) => {
