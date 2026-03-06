@@ -33,10 +33,25 @@ export default function LandingPage({ onStart }: LandingPageProps) {
   const [justVerified, setJustVerified] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
+  // Guard: track last committed char + time to suppress iOS ghost duplicates across cells
+  const lastCommitRef = useRef<{ char: string; time: number }>({ char: '', time: 0 });
+
   // Shared commit logic: extract last valid char and advance focus
   const commitChar = (index: number, rawValue: string) => {
     const clean = rawValue.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const nextChar = clean.slice(-1);
+
+    // For character input, suppress rapid same-char commits across cells (iOS double-fire)
+    if (nextChar) {
+      const now = Date.now();
+      if (
+        nextChar === lastCommitRef.current.char &&
+        now - lastCommitRef.current.time < 100
+      ) {
+        return;
+      }
+      lastCommitRef.current = { char: nextChar, time: now };
+    }
 
     setCode((prev) => {
       if (prev[index] === nextChar) return prev;
@@ -49,7 +64,7 @@ export default function LandingPage({ onStart }: LandingPageProps) {
       // Delay focus so iOS finishes its IME cycle on this cell first
       setTimeout(() => {
         inputRefs.current[index + 1]?.focus();
-      }, 0);
+      }, 10);
     }
   };
 
